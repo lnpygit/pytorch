@@ -1,4 +1,5 @@
 import torch
+import argparse
 import torchvision
 import torch.nn as nn
 import torch.optim as optim
@@ -7,12 +8,6 @@ import torchvision.transforms as transforms
 
 classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal',
            'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
-
-'''
-        增加命令行运行参数输入
-        # 增加gpu运行选择
-        # 增加训练、测试、保存网络函数
-'''
 
 
 class Net(nn.Module):
@@ -46,6 +41,25 @@ class Net(nn.Module):
 
 
 def main():
+
+    # 通过命令行传入网络运行参数
+    parser = argparse.ArgumentParser("用于输入网络参数")
+    parser.add_argument('--gpu', action='store_true', default=False, help='在GPU可用的前提下使用GPU加速')
+    parser.add_argument('--epoch', type=int, default=2, help='网络训练次数(默认为2)')
+    parser.add_argument('--save', action='store_true', default=False, help="网络参数保存选择")
+    parser.add_argument('--lr', type=float, default=0.001, help="网络的学习速率(默认为0.001)")
+    parser.add_argument('--momentum', type=float, default=0.9, help="网络的学习冲量(默认为0.9)")
+
+    args = parser.parse_args()
+
+    epoch = args.epoch
+    save = args.save
+    lr = args.lr
+    momentum = args.momentum
+    gpu = args.gpu and torch.cuda.is_available()
+
+    print("epoch:{}, save:{}, lr:{}, momentum:{}, gpu:{}".format(epoch, save, lr, momentum, gpu))
+
     tranform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
@@ -59,16 +73,18 @@ def main():
     testloader = torch.utils.data.DataLoader(dataset=testset, batch_size=4,
                                              shuffle=False, num_workers=1)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "cuda" if gpu else "cpu"
+    print("device:{}".format(device))
 
     net = Net().to(device)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
 
-    train_net(net, criterion, optimizer, trainloader, device)
+    train_net(net, criterion, optimizer, trainloader, device, epoch)
     test_net(net, testloader, device)
-    net_save(net)
+    if save:
+        net_save(net)
 
 
 def train_net(net, criterion, optimizer, trainloader, device, epoch=2):
@@ -109,6 +125,7 @@ def test_net(net, testloader, device):
 
 def net_save(net, path='./mnist_net.pth'):
     torch.save(net.state_dict(), path)
+    print("save success!")
 
 
 if __name__ == '__main__':
