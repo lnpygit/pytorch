@@ -10,9 +10,9 @@ classes = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal',
            'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
 
-class Net(nn.Module):
+class Net_CNN(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
+        super(Net_CNN, self).__init__()
 
         self.conv1 = nn.Conv2d(1, 6, 5)
         self.conv2 = nn.Conv2d(6, 16, 5)
@@ -60,15 +60,15 @@ def main():
 
     print("epoch:{}, save:{}, lr:{}, momentum:{}, gpu:{}".format(epoch, save, lr, momentum, gpu))
 
-    tranform = transforms.Compose([
+    transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    transet = torchvision.datasets.MNIST(root='./data', train=True, transform=tranform, download=False)
-    testset = torchvision.datasets.MNIST(root='./data', train=False, transform=tranform, download=False)
+    trainset = torchvision.datasets.MNIST(root='./data', train=True, transform=transform, download=False)
+    testset = torchvision.datasets.MNIST(root='./data', train=False, transform=transform, download=False)
 
-    trainloader = torch.utils.data.DataLoader(dataset=transet, batch_size=4,
+    trainloader = torch.utils.data.DataLoader(dataset=trainset, batch_size=4,
                                               shuffle=True, num_workers=1)
     testloader = torch.utils.data.DataLoader(dataset=testset, batch_size=4,
                                              shuffle=False, num_workers=1)
@@ -76,7 +76,7 @@ def main():
     device = "cuda" if gpu else "cpu"
     print("device:{}".format(device))
 
-    net = Net().to(device)
+    net = Net_CNN().to(device)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(net.parameters(), lr=lr, momentum=momentum)
@@ -84,13 +84,13 @@ def main():
     train_net(net, criterion, optimizer, trainloader, device, epoch)
     test_net(net, testloader, device)
     if save:
-        net_save(net)
+        save_net(net)
 
 
-def train_net(net, criterion, optimizer, trainloader, device, epoch=2):
-    for i in range(epoch):
+def train_net(net, criterion, optimizer, trainloader, device, epochs=2):
+    for epoch in range(epochs):
         running_loss = 0
-        for t, data in enumerate(trainloader):
+        for step, data in enumerate(trainloader):
             input, target = data[0].to(device), data[1].to(device)
 
             optimizer.zero_grad()
@@ -100,9 +100,9 @@ def train_net(net, criterion, optimizer, trainloader, device, epoch=2):
             optimizer.step()
 
             running_loss += loss.item()
-            if t % 2000 == 1999:
+            if step % 2000 == 1999:
                 print('[%d, %5d] loss: %.3f' %
-                      (i + 1, t + 1, running_loss / 2000))
+                      (epoch + 1, step + 1, running_loss / 2000))
                 running_loss = 0
 
     print('Finished Training!')
@@ -123,7 +123,7 @@ def test_net(net, testloader, device):
             100 * correct / total))
 
 
-def net_save(net, path='./mnist_net.pth'):
+def save_net(net, path='./CNN_mnist_net.pth'):
     torch.save(net.state_dict(), path)
     print("save success!")
 
